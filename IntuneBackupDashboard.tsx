@@ -167,7 +167,7 @@ export default function IntuneBackupDashboard() {
 
       <footer className="pt-8 border-t border-slate-200 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
         <span>System Status: Healthy</span>
-        <span>Version 1.0.5 - 2026 Build</span>
+        <span>Version 1.0.6 - 2026 Build</span>
       </footer>
     </div>
   );
