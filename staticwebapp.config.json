@@ -2,39 +2,9 @@
   "navigationFallback": {
     "rewrite": "/index.html"
   },
-  "auth": {
-    "identityProviders": {
-      "azureActiveDirectory": {
-        "registration": {
-          "openIdIssuer": "https://login.microsoftonline.com/44054c4a-6aaf-43ce-b7f4-5edc9d9746c5/v2.0"
-        }
-      }
-    }
-  },
-  "routes": [
-    {
-      "route": "/.auth/login/aad",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/.auth/logout",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/*",
-      "allowedRoles": ["authenticated"]
-    }
-  ],
-  "responseOverrides": {
-    "401": {
-      "redirect": "/.auth/login/aad?post_login_redirect_uri=ORIGINAL_URL",
-      "statusCode": 302
-    }
-  },
   "globalHeaders": {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Cache-Control": "no-store"
+    "Access-Control-Allow-Headers": "Content-Type"
   }
 }
