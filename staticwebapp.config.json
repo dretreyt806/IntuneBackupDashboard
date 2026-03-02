@@ -1,1 +1,10 @@
-{"navigationFallback":{"rewrite":"/index.html"},"routes":[{"route":"/.auth/login/aad","allowedRoles":["anonymous"]},{"route":"/.auth/logout","allowedRoles":["anonymous"]},{"route":"/*","allowedRoles":["authenticated"]}],"responseOverrides":{"401":{"redirect":"/.auth/login/aad?post_login_redirect_uri=ORIGINAL_URL","statusCode":302}},"globalHeaders":{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type","Cache-Control":"no-store"}}
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "globalHeaders": {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  }
+}
