@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   Search, Loader2, ShieldCheck, Database, RefreshCw,
   AlertTriangle, History, X, RotateCcw, LayoutGrid, List,
-  Settings, Shield, BookOpen, Sliders
+  Settings, Shield, BookOpen, Sliders, Terminal
 } from "lucide-react"
 
 const FUNCTION_KEY = import.meta.env.VITE_FUNCTION_KEY
