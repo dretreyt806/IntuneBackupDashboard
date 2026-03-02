@@ -69,6 +69,22 @@ const CATEGORIES: Record<string, {
     border:"hover:border-amber-300",
     dot:   "bg-amber-400",
   },
+AppProtection: {
+  label: "App Protection",
+  icon:  <ShieldCheck className="h-3.5 w-3.5" />,
+  color: "bg-rose-100",
+  text:  "text-rose-700",
+  border:"hover:border-rose-300",
+  dot:   "bg-rose-400",
+},
+PowerShellScript: {
+  label: "PS Scripts",
+  icon:  <Terminal className="h-3.5 w-3.5" />,
+  color: "bg-slate-100",
+  text:  "text-slate-700",
+  border:"hover:border-slate-300",
+  dot:   "bg-slate-500",
+},
 }
 
 const ALL_TAB = "__all__"
