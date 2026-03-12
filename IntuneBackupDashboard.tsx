@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   Search, Loader2, ShieldCheck, Database, RefreshCw,
   AlertTriangle, History, X, RotateCcw, LayoutGrid, List,
-  Settings, Shield, BookOpen, Sliders, Terminal
+  Settings, Shield, BookOpen, Sliders, Terminal, Trash2
 } from "lucide-react"
 
 const FUNCTION_KEY = import.meta.env.VITE_FUNCTION_KEY
@@ -32,10 +32,10 @@ interface Backup {
 const CATEGORIES: Record<string, {
   label: string
   icon: React.ReactNode
-  color: string        // Tailwind bg for badge
-  text: string         // Tailwind text for badge
-  border: string       // hover border accent
-  dot: string          // dot indicator
+  color: string
+  text: string
+  border: string
+  dot: string
 }> = {
   AdminTemplate: {
     label: "Admin Templates",
@@ -69,22 +69,38 @@ const CATEGORIES: Record<string, {
     border:"hover:border-amber-300",
     dot:   "bg-amber-400",
   },
-AppProtection: {
-  label: "App Protection",
-  icon:  <ShieldCheck className="h-3.5 w-3.5" />,
-  color: "bg-rose-100",
-  text:  "text-rose-700",
-  border:"hover:border-rose-300",
-  dot:   "bg-rose-400",
-},
-PowerShellScript: {
-  label: "PS Scripts",
-  icon:  <Terminal className="h-3.5 w-3.5" />,
-  color: "bg-slate-100",
-  text:  "text-slate-700",
-  border:"hover:border-slate-300",
-  dot:   "bg-slate-500",
-},
+  AppProtection: {
+    label: "App Protection",
+    icon:  <ShieldCheck className="h-3.5 w-3.5" />,
+    color: "bg-rose-100",
+    text:  "text-rose-700",
+    border:"hover:border-rose-300",
+    dot:   "bg-rose-400",
+  },
+  PowerShellScript: {
+    label: "PS Scripts",
+    icon:  <Terminal className="h-3.5 w-3.5" />,
+    color: "bg-slate-100",
+    text:  "text-slate-700",
+    border:"hover:border-slate-300",
+    dot:   "bg-slate-500",
+  },
+  PlatformScript: {
+    label: "Platform Scripts",
+    icon:  <Terminal className="h-3.5 w-3.5" />,
+    color: "bg-cyan-100",
+    text:  "text-cyan-700",
+    border:"hover:border-cyan-300",
+    dot:   "bg-cyan-500",
+  },
+  RemediationScript: {
+    label: "Remediation",
+    icon:  <Terminal className="h-3.5 w-3.5" />,
+    color: "bg-orange-100",
+    text:  "text-orange-700",
+    border:"hover:border-orange-300",
+    dot:   "bg-orange-400",
+  },
 }
 
 const ALL_TAB = "__all__"
@@ -102,20 +118,21 @@ function getCategoryConfig(cat?: string) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function IntuneBackupDashboard() {
-  const [search,       setSearch]       = useState("")
-  const [policies,     setPolicies]     = useState<Policy[]>([])
-  const [loading,      setLoading]      = useState(true)
-  const [statusMsg,    setStatusMsg]    = useState("")
-  const [backingUpId,  setBackingUpId]  = useState<string | null>(null)
-  const [restoringId,  setRestoringId]  = useState<string | null>(null)
-  const [viewMode,     setViewMode]     = useState<"grid" | "list">("grid")
-  const [activeTab,    setActiveTab]    = useState(ALL_TAB)
+  const [search,        setSearch]        = useState("")
+  const [policies,      setPolicies]      = useState<Policy[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [statusMsg,     setStatusMsg]     = useState("")
+  const [backingUpId,   setBackingUpId]   = useState<string | null>(null)
+  const [restoringId,   setRestoringId]   = useState<string | null>(null)
+  const [deletingId,    setDeletingId]    = useState<string | null>(null)
+  const [viewMode,      setViewMode]      = useState<"grid" | "list">("grid")
+  const [activeTab,     setActiveTab]     = useState(ALL_TAB)
 
-  const [showHistory,   setShowHistory]   = useState(false)
-  const [backups,       setBackups]       = useState<Backup[]>([])
-  const [backupsLoading,setBackupsLoading]= useState(false)
-  const [backupSearch,  setBackupSearch]  = useState("")
-  const [historyTitle,  setHistoryTitle]  = useState("All Backups")
+  const [showHistory,    setShowHistory]    = useState(false)
+  const [backups,        setBackups]        = useState<Backup[]>([])
+  const [backupsLoading, setBackupsLoading] = useState(false)
+  const [backupSearch,   setBackupSearch]   = useState("")
+  const [historyTitle,   setHistoryTitle]   = useState("All Backups")
 
   useEffect(() => { fetchPolicies() }, [])
 
@@ -190,12 +207,29 @@ export default function IntuneBackupDashboard() {
     finally { setRestoringId(null) }
   }
 
+  const handleDelete = async (backup: Backup) => {
+    if (!confirm(`Permanently delete backup of "${backup.policyName}" from ${new Date(backup.backupDate).toLocaleString("en-GB")}?\n\nThis cannot be undone.`)) return
+    setDeletingId(backup.backupId)
+    try {
+      const res = await fetch(
+        `${BASE_URL}/deletebackup?${AUTH_QUERY}&blobPath=${encodeURIComponent(backup.blobPath)}`,
+        { method: "DELETE" }
+      )
+      if (res.ok) {
+        // Remove from local state immediately — no need to reload the full list
+        setBackups(prev => prev.filter(b => b.backupId !== backup.backupId))
+      } else {
+        alert(`Delete failed: ${await res.text()}`)
+      }
+    } catch (err: any) { alert(`Network error: ${err.message}`) }
+    finally { setDeletingId(null) }
+  }
+
   // ── Derived data ─────────────────────────────────────────────────────────────
   const allFiltered = policies.filter(p =>
     (p.displayName || p.name || "").toLowerCase().includes(search.toLowerCase())
   )
 
-  // Build tab list from categories that actually exist
   const tabCategories = Object.keys(CATEGORIES).filter(cat =>
     allFiltered.some(p => p.category === cat)
   )
@@ -208,7 +242,7 @@ export default function IntuneBackupDashboard() {
     (b.policyName || "").toLowerCase().includes(backupSearch.toLowerCase())
   )
 
-  // ── Policy card (shared between grid/list) ────────────────────────────────
+  // ── Policy card ───────────────────────────────────────────────────────────
   const PolicyCard = ({ policy }: { policy: Policy }) => {
     const cfg  = getCategoryConfig(policy.category)
     const name = policy.displayName || policy.name || "—"
@@ -222,23 +256,16 @@ export default function IntuneBackupDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className={`group flex items-center gap-4 bg-white border border-slate-200 ${cfg.border} px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200`}
         >
-          {/* Colour dot */}
           <span className={`flex-shrink-0 w-2 h-2 rounded-full ${cfg.dot}`} />
-
-          {/* Name */}
           <span className="flex-1 font-semibold text-slate-800 text-sm truncate">{name}</span>
-
-          {/* Category badge */}
           <span className={`hidden md:flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${cfg.color} ${cfg.text}`}>
             {cfg.icon}{cfg.label}
           </span>
-
-          {/* Actions */}
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => handleViewPolicyHistory(policy)}
               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition"
-              title="View history"
+              title="View backup history"
             >
               <History className="h-3.5 w-3.5" />
             </button>
@@ -255,7 +282,6 @@ export default function IntuneBackupDashboard() {
       )
     }
 
-    // Grid card
     return (
       <motion.div
         layout
@@ -270,7 +296,7 @@ export default function IntuneBackupDashboard() {
           <button
             onClick={() => handleViewPolicyHistory(policy)}
             className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-400 transition"
-            title="View history"
+            title="View backup history"
           >
             <History className="h-3.5 w-3.5" />
           </button>
@@ -324,7 +350,6 @@ export default function IntuneBackupDashboard() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        {/* Grid / List toggle */}
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <button
             onClick={() => setViewMode("grid")}
@@ -360,9 +385,8 @@ export default function IntuneBackupDashboard() {
         </div>
       ) : (
         <>
-          {/* ── Tabs ──────────────────────────────────────────────────────── */}
+          {/* ── Tabs ─────────────────────────────────────────────────────── */}
           <div className="flex gap-1.5 flex-wrap">
-            {/* All tab */}
             <button
               onClick={() => setActiveTab(ALL_TAB)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
@@ -380,8 +404,8 @@ export default function IntuneBackupDashboard() {
             </button>
 
             {tabCategories.map(cat => {
-              const cfg   = getCategoryConfig(cat)
-              const count = allFiltered.filter(p => p.category === cat).length
+              const cfg    = getCategoryConfig(cat)
+              const count  = allFiltered.filter(p => p.category === cat).length
               const isActive = activeTab === cat
               return (
                 <button
@@ -405,7 +429,7 @@ export default function IntuneBackupDashboard() {
             })}
           </div>
 
-          {/* ── Policy list/grid ───────────────────────────────────────────── */}
+          {/* ── Policy list/grid ──────────────────────────────────────────── */}
           <AnimatePresence mode="wait">
             {displayedPolicies.length > 0 ? (
               <motion.div
@@ -435,7 +459,7 @@ export default function IntuneBackupDashboard() {
         </>
       )}
 
-      {/* ── Backup history slide-over ────────────────────────────────────── */}
+      {/* ── Backup history slide-over ─────────────────────────────────────── */}
       <AnimatePresence>
         {showHistory && (
           <>
@@ -481,11 +505,17 @@ export default function IntuneBackupDashboard() {
                   </div>
                 ) : filteredBackups.length > 0 ? (
                   filteredBackups.map(backup => {
-                    const cfg = getCategoryConfig(backup.category)
+                    const cfg        = getCategoryConfig(backup.category)
+                    const isDeleting = deletingId === backup.backupId
+                    const isRestoring = restoringId === backup.backupId
+
                     return (
                       <motion.div key={backup.backupId}
-                        initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-slate-50 border border-slate-200 rounded-2xl p-4 hover:border-blue-300 transition-all"
+                        layout
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
+                        className="bg-slate-50 border border-slate-200 rounded-2xl p-4 hover:border-blue-200 transition-all"
                       >
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1 min-w-0">
@@ -496,6 +526,7 @@ export default function IntuneBackupDashboard() {
                             <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate opacity-60">{backup.blobPath}</p>
                           </div>
                         </div>
+
                         <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center gap-3">
                           <span className="text-xs text-slate-500">
                             {new Date(backup.backupDate).toLocaleString("en-GB", {
@@ -503,17 +534,35 @@ export default function IntuneBackupDashboard() {
                               hour: "2-digit", minute: "2-digit"
                             })}
                           </span>
-                          <button
-                            onClick={() => handleRestore(backup)}
-                            disabled={restoringId === backup.backupId}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 disabled:opacity-50 transition-all active:scale-95"
-                          >
-                            {restoringId === backup.backupId
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <RotateCcw className="h-3 w-3" />
-                            }
-                            {restoringId === backup.backupId ? "Restoring..." : "Restore"}
-                          </button>
+
+                          <div className="flex items-center gap-2">
+                            {/* Delete */}
+                            <button
+                              onClick={() => handleDelete(backup)}
+                              disabled={isDeleting || isRestoring}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-200 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 hover:border-red-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+                              title="Delete this backup"
+                            >
+                              {isDeleting
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <Trash2 className="h-3 w-3" />
+                              }
+                              {isDeleting ? "Deleting..." : "Delete"}
+                            </button>
+
+                            {/* Restore */}
+                            <button
+                              onClick={() => handleRestore(backup)}
+                              disabled={isRestoring || isDeleting}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+                            >
+                              {isRestoring
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <RotateCcw className="h-3 w-3" />
+                              }
+                              {isRestoring ? "Restoring..." : "Restore"}
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )
